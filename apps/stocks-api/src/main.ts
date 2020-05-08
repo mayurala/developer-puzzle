@@ -31,7 +31,7 @@ const init = async () => {
 
   server.method('getStockQuote', fetchStockQuote, {
     cache: {
-      expiresIn: 50 * 1000,
+      expiresIn: 10 * 1000,
       generateTimeout: 2000,
     }
   });
