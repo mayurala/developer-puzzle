@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { PriceQueryFacade } from '@coding-challenge/stocks/data-access-price-query';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 
 
@@ -9,10 +11,11 @@ import { PriceQueryFacade } from '@coding-challenge/stocks/data-access-price-que
   templateUrl: './stocks.component.html',
   styleUrls: ['./stocks.component.css']
 })
-export class StocksComponent implements OnInit {
+export class StocksComponent implements OnInit, OnDestroy {
   stockPickerForm: FormGroup;
   maxDate: Date = new Date();
 
+  private destroy$ = new Subject();
   quotes$ = this.priceQuery.priceQueries$;
 
 
@@ -25,12 +28,15 @@ export class StocksComponent implements OnInit {
       toDate: ['', Validators.required],
     });
     //The date-pickers should not allow selection of dates after the current day.
-    this.stockPickerForm.valueChanges.subscribe(formValue => {
-      const { fromDate, toDate } = formValue;
-      if (toDate < fromDate) {
-        this.stockPickerForm.get('fromDate').setValue(toDate);
-      }
-    })
+    this.stockPickerForm.valueChanges.pipe(debounceTime(1000)
+      , distinctUntilChanged()
+      , takeUntil(this.destroy$))
+      .subscribe(formValue => {
+        const { fromDate, toDate } = formValue;
+        if (this.stockPickerForm.get('toDate').valid && toDate < fromDate) {
+          this.stockPickerForm.get('fromDate').setValue(toDate);
+        }
+      })
   }
 
   fetchQuote() {
@@ -62,5 +68,10 @@ export class StocksComponent implements OnInit {
     else {
       return 'max';
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next(true);
+    this.destroy$.complete();
   }
 }
