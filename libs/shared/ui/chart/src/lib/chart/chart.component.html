@@ -1,9 +1,3 @@
-<google-chart
-  *ngIf="data"
-  [title]="chart.title"
-  [type]="chart.type"
-  [data]="chartData"
-  [columnNames]="chart.columnNames"
-  [options]="chart.options"
->
+<google-chart *ngIf="data$ | async as chartData " [title]="chart.title" [type]="chart.type" [data]="chartData" [columnNames]="chart.columnNames"
+  [options]="chart.options">
 </google-chart>
