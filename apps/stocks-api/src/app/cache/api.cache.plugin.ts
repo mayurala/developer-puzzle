@@ -1,7 +1,7 @@
 import { environment } from '../../environments/environment';
 
 const request = require('request');
-const fetchStockQuote = async (symbol, period, token) => {
+const fetchStockQuote = async ({ symbol, period, token }) => {
 
     const stockURL = environment.apiURL + symbol + '/chart/' + period + '?token=' + token;
 
@@ -12,7 +12,7 @@ const fetchStockQuote = async (symbol, period, token) => {
             if (response && response['statusCode'] === 200) {
                 resolve(body)
             }
-            reject("Invalid status code : " + response.statusCode);
+            reject("Invalid status code : " + response['statusCode']);
         });
     });
 
@@ -28,13 +28,14 @@ export const apiCachePlugin = {
             name: 'cache-response'
         });
 
-        server.method('getStockCache', fetchStockQuote, {
-            cache: {
-                cache: 'cache-response',
-                expiresIn: 10 * 1000,
-                generateTimeout: 5000,
-                getDecoratedValue: true
-            }
+        const getStockCache = server.cache({
+            cache: 'cache-response',
+            expiresIn: 1000 * 60 * 60,
+            segment: 'testSegment',
+            generateFunc: async (id) => {
+                return await fetchStockQuote(id);
+            },
+            generateTimeout: 5000
         });
 
         server.route({
@@ -43,15 +44,9 @@ export const apiCachePlugin = {
             handler: async (req, h) => {
 
                 const { symbol, period } = req.params;
-
+                const id = `${symbol}:${period}`;
                 const token = req.query.token;
-                const { value, cached } = await server.methods.getStockCache(symbol, period, token);
-
-                const lastModified = cached ? new Date(cached.stored) : new Date();
-
-                return h.response(value)
-                    .header('Last-modified', lastModified.toUTCString());
-
+                return await getStockCache.get({ id, symbol, period, token });
 
             }
         });
