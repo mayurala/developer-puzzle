@@ -42,33 +42,11 @@ export class StocksComponent implements OnInit, OnDestroy {
   fetchQuote() {
     if (this.stockPickerForm.valid) {
       const { symbol, fromDate, toDate } = this.stockPickerForm.value;
-      const timeDiff = Math.abs(fromDate - toDate);
-      const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      const period = this.findPeriodByDays(diffDays); //find period based on custom dates;
-      this.priceQuery.fetchQuote(symbol, period);
+      const period = 'max'; // calling maximum data of the stock
+      this.priceQuery.fetchQuote(symbol, period, fromDate, toDate);
     }
   }
 
-  findPeriodByDays(days: number) {
-    if (days <= 30) {
-      return '1m';
-    } else if (days > 30 && days <= 91) {
-      return '3m';
-    }
-    else if (days > 91 && days <= 182) {
-      return '6m';
-    }
-    else if (days > 182 && days <= 365) {
-      return '1y';
-    } else if (days > 365 && days <= 730) {
-      return '2y';
-    } else if (days > 1095 && days <= 1095) {
-      return '3y';
-    }
-    else {
-      return 'max';
-    }
-  }
 
   ngOnDestroy() {
     this.destroy$.next(true);
