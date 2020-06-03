@@ -25,11 +25,17 @@ export class PriceQueryEffects {
         return this.httpClient
           .get(
             `${this.env.apiURL}/beta/stock/${action.symbol}/chart/${
-              action.period
+            action.period
             }?token=${this.env.apiKey}`
           )
           .pipe(
-            map(resp => new PriceQueryFetched(resp as PriceQueryResponse[]))
+            map((resp: PriceQueryResponse[]) => {
+              const result: PriceQueryResponse[] = resp.filter(item => {
+                const priceQueryDate: Date = new Date(item.date);
+                return priceQueryDate >= action.fromDate && priceQueryDate <= action.toDate;
+              });
+              return new PriceQueryFetched(result);
+            })
           );
       },
 
